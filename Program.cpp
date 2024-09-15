@@ -65,17 +65,17 @@ void Program::GenerateRandomGraph(const int inNumNodes)
 	do
 	{
 		// Offset int by 65 to start at 'A'
-		char from = (char)(nodesDistribution(randomEngine) + 65);
-		char to = (char)(nodesDistribution(randomEngine) + 65);
+		char fromID = (char)(nodesDistribution(randomEngine) + 65);
+		char toID = (char)(nodesDistribution(randomEngine) + 65);
 
 		// Ignore if we randomly select ourselves as a node cannot connect to itself.
-		if (from == to)
+		if (fromID == toID)
 			continue;
 
 		// Ensure that this connection does not exist before we try to add it.
-		if (!mGraph[from][to])
+		if (!mGraph[IDToInt(fromID)][IDToInt(toID)])
 		{
-			AddConnection(from, to);
+			AddConnection(fromID, toID);
 			numConnections--;
 		}
 
@@ -153,19 +153,28 @@ bool Program::ParseLine(const std::string inLine)
 /// <param name="inNumConnectionsForRemoval">The amount of incoming connections on a node which should flag it for removal.</param>
 void Program::CleanGraph(const int inNumConnectionsForRemoval)
 {
+	std::vector<int> nodesToRemove;
+
+	// First cache which nodes to remove, so we don't remove nodes which gets N connections as a result of removal.
 	for (int i = 0; i < MAX_NODES; i++)
 	{
 		std::vector<int> incomingConnections;
 		GetIncomingConnections(i, incomingConnections);
-		if (incomingConnections.size() == inNumConnectionsForRemoval)
-		{
-			std::cout << TEXT_COLOR(32) << "Removing '" << IntToID(i) << "'." << TEXT_RESET() << std::endl;
 
-			for (int j = 0; j < MAX_NODES; j++)
-			{
-				mGraph[j][i] = false;
-				mGraph[i][j] = false;
-			}
+		if (incomingConnections.size() == inNumConnectionsForRemoval)
+			nodesToRemove.push_back(i);
+	}
+
+	// Do the actual removal
+	for (int nodeIndex : nodesToRemove)
+	{
+		std::cout << TEXT_COLOR(32) << "Removing '" << IntToID(nodeIndex) << "'." << TEXT_RESET() << std::endl;
+
+		// Clean connection from and to this node
+		for (int i = 0; i < MAX_NODES; i++)
+		{
+			mGraph[i][nodeIndex] = false;
+			mGraph[nodeIndex][i] = false;
 		}
 	}
 }
